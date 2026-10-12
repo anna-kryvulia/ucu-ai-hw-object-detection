@@ -1,6 +1,6 @@
 ---
-title: Homework 1 — Your Title Here
-author: Name Surname
+title: Homework 1 -- Your Title Here
+author: John Doe
 course: Artificial Intelligence · UCU
 date: 2026-10-12
 ---
