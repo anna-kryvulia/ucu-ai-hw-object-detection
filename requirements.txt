@@ -1,0 +1,12 @@
+# Helpers only. torch / torchvision come preinstalled on Colab and Kaggle.
+# Add model libraries (ultralytics, mmdet, ...) here as you start using them.
+numpy
+pandas
+pyyaml
+matplotlib
+pillow
+tqdm
+pycocotools
+faster-coco-eval
+kaggle
+wandb
