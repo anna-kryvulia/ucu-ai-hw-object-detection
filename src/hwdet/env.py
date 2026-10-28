@@ -117,9 +117,43 @@ def device() -> str:
     return "cpu"
 
 
+def configure_warnings(log_file: Path) -> None:
+    """Every distinct warning is printed once, as one line, and appended to `log_file`.
+    DataLoader worker processes only write to the log, so a warning is not repeated per worker."""
+    import warnings
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    seen: set[str] = set()
+
+    def show(message, category, filename, lineno, file=None, line=None):
+        text = str(message).strip().splitlines()[0][:200]
+        where = f"{Path(filename).name}:{lineno}"
+        key = f"{category.__name__}: {text} [{where}]"
+        if key in seen:
+            return
+        seen.add(key)
+        with open(log_file, "a") as f:
+            f.write(key + "\n")
+        try:
+            from torch.utils.data import get_worker_info
+            in_worker = get_worker_info() is not None
+        except ImportError:
+            in_worker = False
+        if not in_worker:
+            print(f"warning: {key}", file=sys.stderr)
+
+    warnings.showwarning = show
+
+
+def warnings_summary(paths: Paths) -> list[str]:
+    """Distinct warnings logged so far (all sessions), to fix them at the source."""
+    f = paths.outputs / "warnings.log"
+    return sorted(set(f.read_text().splitlines())) if f.exists() else []
+
+
 def setup(seed: int = 42, mount_drive: bool = True) -> Paths:
     """First call in every notebook. Safe to re-run."""
     paths = get_paths(mount_drive=mount_drive)
+    configure_warnings(paths.outputs / "warnings.log")
     restore_kaggle_outputs(paths)
     seed_everything(seed)
     print(paths)

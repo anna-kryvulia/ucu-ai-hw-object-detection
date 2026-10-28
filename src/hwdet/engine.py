@@ -127,7 +127,7 @@ def fit(model, run: Run, cfg: dict, data: Data, device: str) -> None:
                 losses = model(imgs, targets)
             loss = sum(losses.values())
             if not torch.isfinite(loss):
-                print("non-finite loss, batch skipped:", {k: float(v) for k, v in losses.items()})
+                print("non-finite loss, batch skipped:", {k: v.detach().item() for k, v in losses.items()})
                 opt.zero_grad(set_to_none=True)
                 continue
             opt.zero_grad(set_to_none=True)
@@ -139,7 +139,7 @@ def fit(model, run: Run, cfg: dict, data: Data, device: str) -> None:
             if scaler.get_scale() >= scale:          # AMP skips the step when it lowers the scale
                 sched.step()
             for k, v in losses.items():
-                sums[k] = sums.get(k, 0.0) + float(v)
+                sums[k] = sums.get(k, 0.0) + v.detach().item()
             n += 1
 
         row = {k: v / max(n, 1) for k, v in sums.items()}

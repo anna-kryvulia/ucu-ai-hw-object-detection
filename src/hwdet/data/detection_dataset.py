@@ -78,20 +78,19 @@ class DetectionDataset(Dataset):
 
     def __getitem__(self, i: int):
         r = self.frames.iloc[i]
-        img = np.asarray(Image.open(self.root / r.file_name).convert("RGB"))
+        img = np.array(Image.open(self.root / r.file_name).convert("RGB"))   # writable copy for torch
         if self.targets is None:                               # test images: no labels
-            return torch.from_numpy(img.copy()).permute(2, 0, 1).float() / 255, {}, i
+            return torch.from_numpy(img).permute(2, 0, 1).float() / 255, {}, i
 
         t = self.targets[r.file_name]
         boxes, labels = t["boxes"].copy(), t["labels"].copy()
         if self.train and self.mask_ignore and len(t["ignore"]):
-            img = img.copy()
             for x1, y1, x2, y2 in t["ignore"].astype(int):
                 img[max(y1, 0):y2, max(x1, 0):x2] = IMAGENET_MEAN_RGB
             keep = ~centres_inside(boxes, t["ignore"])
             boxes, labels = boxes[keep], labels[keep]
 
-        img = torch.from_numpy(np.ascontiguousarray(img)).permute(2, 0, 1).float() / 255
+        img = torch.from_numpy(img).permute(2, 0, 1).float() / 255
         if self.train and random.random() < self.hflip:        # horizontal flip: image and boxes together
             img = img.flip(-1)
             W = img.shape[-1]
