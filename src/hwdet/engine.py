@@ -134,7 +134,10 @@ def fit(model, run: Run, cfg: dict, data: Data, device: str) -> None:
             scaler.scale(loss).backward()
             scaler.unscale_(opt)
             torch.nn.utils.clip_grad_norm_(model.parameters(), t.get("clip_grad", 10.0))
-            scaler.step(opt); scaler.update(); sched.step()
+            scale = scaler.get_scale()
+            scaler.step(opt); scaler.update()
+            if scaler.get_scale() >= scale:          # AMP skips the step when it lowers the scale
+                sched.step()
             for k, v in losses.items():
                 sums[k] = sums.get(k, 0.0) + float(v)
             n += 1
