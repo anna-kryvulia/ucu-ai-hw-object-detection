@@ -1,6 +1,6 @@
 # data and heavy outputs live outside git (Drive / Kaggle / local disk)
-data/
-outputs/
+/data/
+/outputs/
 *.pt
 *.pth
 *.onnx

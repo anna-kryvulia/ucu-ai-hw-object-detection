@@ -17,7 +17,29 @@ from .data.classes import CLASS_NAMES
 from .data.io import load_gt
 from .env import Paths
 
-COLORS = plt.cm.tab10(np.arange(len(CLASS_NAMES)))
+from matplotlib.colors import LinearSegmentedColormap
+
+# Categorical palette in a fixed, colour-blind-checked order: one colour per class, always the same.
+PALETTE = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948"]
+COLORS = PALETTE[:len(CLASS_NAMES)]
+SPLIT_COLORS = {"train": PALETTE[0], "val": PALETTE[1], "test": PALETTE[2]}
+INK, INK_2, INK_3 = "#0b0b0b", "#52514e", "#8a8984"          # primary / secondary / muted text
+# one-hue sequential ramp (light -> dark blue) for magnitudes such as heatmaps
+BLUES = LinearSegmentedColormap.from_list("hw_blues", ["#f2f7fd", "#b7d3f6", "#6da7ec", "#2a78d6",
+                                                       "#1c5cab", "#0d366b"])
+
+
+def set_style() -> None:
+    """Shared matplotlib look for every notebook: light grid, no top/right spines, readable fonts."""
+    plt.rcParams.update({
+        "figure.dpi": 110, "savefig.dpi": 160, "figure.facecolor": "white", "savefig.facecolor": "white",
+        "font.size": 10, "axes.titlesize": 11.5, "axes.titleweight": "bold", "axes.titlelocation": "left",
+        "axes.titlepad": 10, "axes.labelsize": 10, "axes.labelcolor": INK_2, "axes.edgecolor": INK_3,
+        "axes.spines.top": False, "axes.spines.right": False, "axes.grid": True, "axes.axisbelow": True,
+        "grid.color": "#e4e3df", "grid.linewidth": 0.7, "xtick.color": INK_2, "ytick.color": INK_2,
+        "xtick.labelsize": 9, "ytick.labelsize": 9, "legend.frameon": False, "legend.fontsize": 9,
+        "lines.linewidth": 2, "patch.edgecolor": "white",
+    })
 
 
 def draw(ax, img, boxes_xywh, classes, scores=None, ignore_xywh=None, title: str = "", lw: float = 1.0):
