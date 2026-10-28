@@ -1,0 +1,8 @@
+# Shared protocol: every detector inherits this, so all models are compared on equal terms.
+seed: 42
+split:
+  train_frame_step: 10    # every 10th training frame (2,421 frames): keeps 98.6% of tracks (EDA, section 7)
+  monitor_frame_step: 5   # val subset scored after each epoch; final metrics use the full val split
+data:
+  mask_ignore: true       # ignored regions painted with the mean colour, boxes inside them dropped
+wandb: true               # training curves + val predictions to Weights & Biases (visualization bonus)

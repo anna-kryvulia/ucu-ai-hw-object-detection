@@ -1,0 +1,4 @@
+base: frcnn_baseline
+description: GIoU loss instead of smooth L1 for the second-stage box regression
+model:
+  box_loss: giou

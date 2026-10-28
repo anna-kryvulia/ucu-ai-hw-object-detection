@@ -125,10 +125,14 @@ class Run:
 
     # ----- wandb (optional, needed only for the visualization bonus) -----
     def _init_wandb(self) -> None:
-        import wandb
-        self._wandb = wandb.init(project=self.cfg.get("wandb_project", "ucu-hw2-detection"),
-                                 name=self.id, id=self.id, resume="allow", config=self.cfg,
-                                 dir=str(self.dir))
+        try:
+            import wandb
+            self._wandb = wandb.init(project=self.cfg.get("wandb_project", "ucu-hw2-detection"),
+                                     name=self.id, id=self.id, resume="allow", config=self.cfg,
+                                     dir=str(self.dir))
+        except Exception as e:                       # no login / no network: keep training, log locally only
+            print(f"W&B disabled for this run: {e}")
+            self._wandb = None
 
     def finish(self) -> None:
         if self._wandb:

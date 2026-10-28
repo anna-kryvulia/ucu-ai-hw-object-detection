@@ -1,0 +1,31 @@
+base: _protocol
+family: two_stage
+description: Faster R-CNN R50-FPN, COCO weights, torchvision defaults
+model:
+  arch: resnet50_fpn      # resnet50_fpn (v1) | resnet50_fpn_v2 (stronger, ~2x slower)
+  min_size: 800           # shorter image side after resizing (torchvision default)
+  max_size: 1333          # longer side cap (default)
+  anchor_sizes: [32, 64, 128, 256, 512]          # one size per FPN level (default)
+  aspect_ratios: [0.5, 1.0, 2.0]                 # height / width (default)
+  rpn_pre_nms_top_n_train: 2000                  # proposals kept before / after NMS (defaults)
+  rpn_post_nms_top_n_train: 2000
+  rpn_pre_nms_top_n_test: 1000
+  rpn_post_nms_top_n_test: 1000
+  box_batch_size_per_image: 512                  # RoIs sampled per image for the second stage (default)
+  box_positive_fraction: 0.25                    # share of positive RoIs in that sample (default)
+  box_detections_per_img: 300                    # default 100 < 180 objects in the densest frame
+  box_score_thresh: 0.001                        # keep low-score boxes: mAP needs the full ranking
+  box_loss: smooth_l1                            # smooth_l1 (default) | giou
+train:
+  epochs: 8
+  batch_size: 4
+  lr: 0.02
+  optimizer: sgd
+  weight_decay: 1.0e-4
+  schedule: cosine
+  warmup_iters: 300
+  amp: true
+  hflip: 0.5
+  color_jitter: 0.0
+  workers: 4
+  eval_every: 1

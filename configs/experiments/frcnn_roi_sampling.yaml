@@ -1,0 +1,5 @@
+base: frcnn_baseline
+description: RoI sampling 1024 per image with 50% positives (dense scenes have many positives)
+model:
+  box_batch_size_per_image: 1024
+  box_positive_fraction: 0.5

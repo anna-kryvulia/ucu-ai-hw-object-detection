@@ -1,0 +1,8 @@
+base: frcnn_baseline
+description: smaller anchors (16-256 px) + 2x more RPN proposals for small, dense objects
+model:
+  anchor_sizes: [16, 32, 64, 128, 256]
+  rpn_pre_nms_top_n_train: 4000
+  rpn_post_nms_top_n_train: 4000
+  rpn_pre_nms_top_n_test: 2000
+  rpn_post_nms_top_n_test: 2000
