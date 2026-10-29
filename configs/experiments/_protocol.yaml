@@ -5,4 +5,16 @@ split:
   monitor_frame_step: 5   # val subset scored after each epoch; final metrics use the full val split
 data:
   mask_ignore: true       # ignored regions painted with the mean colour, boxes inside them dropped
+train:                    # same budget for every model; each family sets its own lr
+  epochs: 8
+  batch_size: 4
+  optimizer: sgd
+  weight_decay: 1.0e-4
+  schedule: cosine
+  warmup_iters: 300
+  amp: true
+  hflip: 0.5
+  color_jitter: 0.0
+  workers: 4
+  eval_every: 1
 wandb: true               # training curves + val predictions to Weights & Biases (visualization bonus)

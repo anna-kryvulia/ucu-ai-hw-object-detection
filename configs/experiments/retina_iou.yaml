@@ -1,0 +1,5 @@
+base: retina_baseline
+description: looser anchor assignment - positive at IoU >= 0.4, negative below 0.3
+model:
+  fg_iou_thresh: 0.4
+  bg_iou_thresh: 0.3

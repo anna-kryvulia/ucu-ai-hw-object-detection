@@ -17,15 +17,4 @@ model:
   box_score_thresh: 0.001                        # keep low-score boxes: mAP needs the full ranking
   box_loss: smooth_l1                            # smooth_l1 (default) | giou
 train:
-  epochs: 8
-  batch_size: 4
-  lr: 0.02
-  optimizer: sgd
-  weight_decay: 1.0e-4
-  schedule: cosine
-  warmup_iters: 300
-  amp: true
-  hflip: 0.5
-  color_jitter: 0.0
-  workers: 4
-  eval_every: 1
+  lr: 0.02                # protocol in _protocol.yaml

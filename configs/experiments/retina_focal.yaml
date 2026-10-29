@@ -1,0 +1,4 @@
+base: retina_baseline
+description: focal loss gamma 1.5 instead of 2 - less down-weighting of easy anchors
+model:
+  focal_gamma: 1.5

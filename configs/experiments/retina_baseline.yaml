@@ -1,0 +1,20 @@
+base: _protocol
+family: one_stage
+description: RetinaNet R50-FPN v2, COCO weights, torchvision defaults
+model:
+  arch: resnet50_fpn_v2
+  min_size: 800                            # same input size as Faster R-CNN
+  max_size: 1333
+  anchor_sizes: [32, 64, 128, 256, 512]    # base anchor of FPN levels P3-P7 (default)
+  anchor_scales: [1.0, 1.26, 1.587]        # octave scales 2^0, 2^1/3, 2^2/3 at every level (default)
+  aspect_ratios: [0.5, 1.0, 2.0]           # height / width (default)
+  fg_iou_thresh: 0.5                       # anchor is positive at IoU >= 0.5 with an object (default)
+  bg_iou_thresh: 0.4                       # negative below 0.4, ignored in between (default)
+  focal_alpha: 0.25                        # focal loss weight of positives (default)
+  focal_gamma: 2.0                         # focal loss down-weighting of easy examples (default)
+  topk_candidates: 1000                    # per FPN level before NMS (default)
+  detections_per_img: 300                  # as Faster R-CNN: default 100 < 180 objects in the densest frame
+  score_thresh: 0.001                      # keep low-score boxes: mAP needs the full ranking
+  nms_thresh: 0.5
+train:
+  lr: 0.01                                 # focal-loss heads are less stable than Faster R-CNN at 0.02

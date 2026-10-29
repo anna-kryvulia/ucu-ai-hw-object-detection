@@ -79,6 +79,8 @@ def predict(model, ds: DetectionDataset, device: str, batch_size: int = 4, worke
             fn = ds.frames.file_name.iloc[i]
             b = o["boxes"].float().cpu().numpy()
             for (x1, y1, x2, y2), s, c in zip(b, o["scores"].float().cpu().numpy(), o["labels"].cpu().numpy()):
+                if c < 1:                                # index 0 = background / unused (RetinaNet, FCOS)
+                    continue
                 rows.append((fn, int(c) - 1, float(s), x1, y1, x2 - x1, y2 - y1))
     return pd.DataFrame(rows, columns=PRED_COLUMNS)
 

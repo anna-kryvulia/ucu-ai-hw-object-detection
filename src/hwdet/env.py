@@ -81,7 +81,9 @@ def restore_kaggle_outputs(paths: Paths) -> None:
     Copy any runs found there into /kaggle/working so training resumes instead of restarting."""
     if paths.platform != "kaggle":
         return
-    for prev_runs in Path("/kaggle/input").glob("*/outputs/runs"):
+    found = [p for pattern in ("*/outputs/runs", "*/*/*/outputs/runs")      # older and newer mount layouts
+             for p in Path("/kaggle/input").glob(pattern)]
+    for prev_runs in found:
         for run_dir in prev_runs.iterdir():
             dst = paths.runs / run_dir.name
             if not dst.exists():

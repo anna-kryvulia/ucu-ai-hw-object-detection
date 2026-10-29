@@ -1,0 +1,4 @@
+base: retina_baseline
+description: anchors from the EDA object sizes - P3 starts at 16 px (16-406 px instead of 32-813 px)
+model:
+  anchor_sizes: [16, 32, 64, 128, 256]
