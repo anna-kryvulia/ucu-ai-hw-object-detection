@@ -1,0 +1,46 @@
+seed: 42
+split:
+  train_frame_step: 10
+  monitor_frame_step: 5
+data:
+  mask_ignore: true
+wandb: true
+family: two_stage
+description: GIoU loss instead of smooth L1 for the second-stage box regression
+model:
+  arch: resnet50_fpn
+  min_size: 800
+  max_size: 1333
+  anchor_sizes:
+  - 32
+  - 64
+  - 128
+  - 256
+  - 512
+  aspect_ratios:
+  - 0.5
+  - 1.0
+  - 2.0
+  rpn_pre_nms_top_n_train: 2000
+  rpn_post_nms_top_n_train: 2000
+  rpn_pre_nms_top_n_test: 1000
+  rpn_post_nms_top_n_test: 1000
+  box_batch_size_per_image: 512
+  box_positive_fraction: 0.25
+  box_detections_per_img: 300
+  box_score_thresh: 0.001
+  box_loss: giou
+train:
+  epochs: 8
+  batch_size: 4
+  lr: 0.02
+  optimizer: sgd
+  weight_decay: 0.0001
+  schedule: cosine
+  warmup_iters: 300
+  amp: true
+  hflip: 0.5
+  color_jitter: 0.0
+  workers: 4
+  eval_every: 1
+name: frcnn_giou

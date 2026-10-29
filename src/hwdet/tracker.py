@@ -149,10 +149,13 @@ def _upsert_registry(path: Path, run_id: str, eval_name: str, cfg: dict, values:
         "updated": _now(),
         **{k: v for k, v in values.items() if isinstance(v, (int, float, str))},
     }
-    df = pd.read_csv(path) if path.exists() else pd.DataFrame()
-    if len(df):
+    new = pd.DataFrame([row])
+    if path.exists():
+        df = pd.read_csv(path)
         df = df[~((df["run_id"] == run_id) & (df["eval"] == eval_name))]
-    pd.concat([df, pd.DataFrame([row])], ignore_index=True).to_csv(path, index=False)
+        if len(df):                                  # concat with an empty frame raises a FutureWarning
+            new = pd.concat([df, new], ignore_index=True)
+    new.to_csv(path, index=False)
 
 
 def load_registry(paths: Paths) -> pd.DataFrame:
