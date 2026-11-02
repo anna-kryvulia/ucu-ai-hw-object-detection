@@ -1,0 +1,6 @@
+base: retina_baseline
+description: RetinaNet tuned - P3 anchors from 16 px with wider octave scales (16-645 px), focal gamma 1.5
+model:
+  anchor_sizes: [16, 32, 64, 128, 256]     # small objects: as retina_anchors
+  anchor_scales: [1.0, 1.587, 2.52]        # 2^0, 2^2/3, 2^4/3: largest anchor back to ~650 px, levels overlap
+  focal_gamma: 1.5                         # as retina_focal

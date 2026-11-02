@@ -13,6 +13,7 @@ embeddings) can reuse a trained model without training it again.
 from __future__ import annotations
 
 import math
+import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -32,6 +33,9 @@ from .eval.coco_eval import evaluate
 from .eval.speed import measure_fps
 from .submission import make_submission
 from .tracker import Run
+
+# Kaggle "Save & Run All" stores progress bars as widgets it cannot render later -> no bars there
+NO_BARS = os.environ.get("KAGGLE_KERNEL_RUN_TYPE") == "Batch"
 
 
 @dataclass
@@ -73,7 +77,7 @@ def predict(model, ds: DetectionDataset, device: str, batch_size: int = 4, worke
     model.eval().to(device)
     dl = DataLoader(ds, batch_size=batch_size, shuffle=False, num_workers=workers, collate_fn=collate)
     rows = []
-    for imgs, _, idx in tqdm(dl, desc=desc, leave=False):
+    for imgs, _, idx in tqdm(dl, desc=desc, leave=False, disable=NO_BARS):
         outs = model([im.to(device) for im in imgs])
         for o, i in zip(outs, idx):
             fn = ds.frames.file_name.iloc[i]
@@ -122,7 +126,7 @@ def fit(model, run: Run, cfg: dict, data: Data, device: str) -> None:
     for epoch in range(start, t["epochs"]):
         model.train()
         sums, n, t0 = {}, 0, time.time()
-        for imgs, targets, _ in tqdm(dl, desc=f"epoch {epoch}", leave=False):
+        for imgs, targets, _ in tqdm(dl, desc=f"epoch {epoch}", leave=False, disable=NO_BARS):
             imgs = [im.to(device, non_blocking=True) for im in imgs]
             targets = [{k: v.to(device) for k, v in tg.items()} for tg in targets]
             with torch.autocast("cuda", enabled=use_amp):
