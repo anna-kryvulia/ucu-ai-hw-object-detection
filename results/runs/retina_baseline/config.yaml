@@ -1,0 +1,49 @@
+seed: 42
+split:
+  train_frame_step: 10
+  monitor_frame_step: 5
+data:
+  mask_ignore: true
+train:
+  epochs: 8
+  batch_size: 4
+  optimizer: sgd
+  weight_decay: 0.0001
+  schedule: cosine
+  warmup_iters: 300
+  amp: true
+  hflip: 0.5
+  color_jitter: 0.0
+  workers: 4
+  eval_every: 1
+  lr: 0.01
+wandb: true
+family: one_stage
+description: RetinaNet R50-FPN v2, COCO weights, torchvision defaults
+model:
+  arch: resnet50_fpn_v2
+  min_size: 800
+  max_size: 1333
+  anchor_sizes:
+  - 32
+  - 64
+  - 128
+  - 256
+  - 512
+  anchor_scales:
+  - 1.0
+  - 1.26
+  - 1.587
+  aspect_ratios:
+  - 0.5
+  - 1.0
+  - 2.0
+  fg_iou_thresh: 0.5
+  bg_iou_thresh: 0.4
+  focal_alpha: 0.25
+  focal_gamma: 2.0
+  topk_candidates: 1000
+  detections_per_img: 300
+  score_thresh: 0.001
+  nms_thresh: 0.5
+name: retina_baseline
