@@ -1,0 +1,18 @@
+base: _protocol
+family: anchor_free
+description: FCOS R50-FPN, COCO weights, torchvision defaults
+model:
+  arch: resnet50_fpn
+  min_size: 800                            # same input size as Faster R-CNN and RetinaNet
+  max_size: 1333
+  p2_head: false                           # levels P3-P7 (strides 8-128, default)
+  center_sampling_radius: 1.5              # positive location within 1.5 strides of the box centre (default)
+  box_loss: giou                           # box regression loss (default)
+  focal_alpha: 0.25                        # focal loss of the classification head (default)
+  focal_gamma: 2.0
+  topk_candidates: 1000                    # per FPN level before NMS (default)
+  detections_per_img: 300                  # as the other detectors: default 100 < 180 objects in the densest frame
+  score_thresh: 0.001                      # keep low-score boxes: mAP needs the full ranking
+  nms_thresh: 0.5                          # as the other detectors (FCOS default 0.6)
+train:
+  lr: 0.01                                 # as RetinaNet: focal-loss heads, GroupNorm towers

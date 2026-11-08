@@ -1,0 +1,4 @@
+base: fcos_baseline
+description: box regression loss CIoU instead of GIoU (adds centre-distance and aspect-ratio terms)
+model:
+  box_loss: ciou

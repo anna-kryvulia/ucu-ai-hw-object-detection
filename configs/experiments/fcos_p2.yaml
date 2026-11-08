@@ -1,0 +1,4 @@
+base: fcos_baseline
+description: extra high-resolution level P2 (stride 4) - FPN levels P2-P7, size ranges shifted down one level
+model:
+  p2_head: true

@@ -52,19 +52,26 @@ def build_gt(frames: pd.DataFrame, data_root: Path) -> tuple[dict, dict]:
     return {"images": images, "annotations": anns, "categories": cats}, id_of
 
 
-def evaluate(preds: pd.DataFrame, frames: pd.DataFrame, data_root: Path, per_class: bool = True,
-             verbose: bool = False) -> dict:
+def _gt_and_dets(preds: pd.DataFrame, frames: pd.DataFrame, data_root: Path):
+    """COCO ground truth for `frames` and the matching detections as an array (None if there are none)."""
     gt_dict, id_of = build_gt(frames, data_root)
     gt = COCO()
     gt.dataset = gt_dict
     with contextlib.redirect_stdout(io.StringIO()):
         gt.createIndex()
-
     p = preds[preds["file_name"].isin(id_of)]
     if len(p) == 0:
-        return {k: 0.0 for k in STAT_NAMES}
+        return gt, None
     dets = np.column_stack([p["file_name"].map(id_of), p[["x", "y", "w", "h", "score"]].to_numpy(),
                             p["cls"].to_numpy() + 1])
+    return gt, dets
+
+
+def evaluate(preds: pd.DataFrame, frames: pd.DataFrame, data_root: Path, per_class: bool = True,
+             verbose: bool = False) -> dict:
+    gt, dets = _gt_and_dets(preds, frames, data_root)
+    if dets is None:
+        return {k: 0.0 for k in STAT_NAMES}
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
         dt = gt.loadRes(dets)
@@ -83,3 +90,32 @@ def evaluate(preds: pd.DataFrame, frames: pd.DataFrame, data_root: Path, per_cla
             pk = prec[:, :, k, 0, -1]
             res[f"AP_{name}"] = float(pk[pk > -1].mean()) if (pk > -1).any() else float("nan")
     return res
+
+
+SIZE_BINS = (0, 16, 32, 96, 1e5)       # object side sqrt(area) in original pixels; COCO "small" is < 32
+
+
+def evaluate_by_size(preds: pd.DataFrame, frames: pd.DataFrame, data_root: Path,
+                     bins: tuple = SIZE_BINS) -> pd.DataFrame:
+    """AP@[.5:.95], AP50 and AR@500 per object-size bin (finer than COCO's small / medium / large).
+    A detection is matched only to objects of its bin, as COCO does for AP_small etc."""
+    labels = [f"< {bins[1]:g} px"] + [f"{a:g}–{b:g} px" for a, b in zip(bins[1:-2], bins[2:-1])] + [f"> {bins[-2]:g} px"]
+    gt, dets = _gt_and_dets(preds, frames, data_root)
+    sides = np.sqrt([a["area"] for a in gt.dataset["annotations"] if not a.get("iscrowd", 0)])
+    counts = np.histogram(sides, bins=bins)[0]
+    if dets is None:
+        return pd.DataFrame({"objects": counts, "AP": 0.0, "AP50": 0.0, "AR_500": 0.0}, index=labels)
+    with contextlib.redirect_stdout(io.StringIO()):
+        dt = gt.loadRes(dets)
+        E = COCOeval(gt, dt, "bbox")
+        E.params.maxDets = [MAX_DETS]
+        E.params.areaRng = [[a * a, b * b] for a, b in zip(bins[:-1], bins[1:])]
+        E.params.areaRngLbl = labels
+        E.evaluate()
+        E.accumulate()
+    prec, rec = E.eval["precision"][..., 0], E.eval["recall"][..., 0]     # [T, R, K, A], [T, K, A]
+    mean = lambda x: float(x[x > -1].mean()) if (x > -1).any() else float("nan")
+    return pd.DataFrame({"objects": counts,
+                         "AP": [mean(prec[:, :, :, a]) for a in range(len(labels))],
+                         "AP50": [mean(prec[0, :, :, a]) for a in range(len(labels))],
+                         "AR_500": [mean(rec[:, :, a]) for a in range(len(labels))]}, index=labels)

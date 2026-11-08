@@ -1,0 +1,4 @@
+base: fcos_baseline
+description: label assignment - centre sampling radius 2.5 strides instead of 1.5 (more positive locations)
+model:
+  center_sampling_radius: 2.5
