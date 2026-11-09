@@ -1,0 +1,37 @@
+seed: 42
+split:
+  train_frame_step: 10
+  monitor_frame_step: 5
+data:
+  mask_ignore: true
+train:
+  epochs: 8
+  batch_size: 4
+  optimizer: sgd
+  weight_decay: 0.0001
+  schedule: cosine
+  warmup_iters: 300
+  amp: true
+  hflip: 0.5
+  color_jitter: 0.0
+  workers: 4
+  eval_every: 1
+  lr: 0.01
+wandb: true
+family: anchor_free
+description: label assignment - centre sampling radius 2.5 strides instead of 1.5
+  (more positive locations)
+model:
+  arch: resnet50_fpn
+  min_size: 800
+  max_size: 1333
+  p2_head: false
+  center_sampling_radius: 2.5
+  box_loss: giou
+  focal_alpha: 0.25
+  focal_gamma: 2.0
+  topk_candidates: 1000
+  detections_per_img: 300
+  score_thresh: 0.001
+  nms_thresh: 0.5
+name: fcos_center
