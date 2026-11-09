@@ -74,7 +74,8 @@ def is_ready(data_root: Path, labels_only: bool = False) -> bool:
     return all((data_root / n).exists() for n in need)
 
 
-def ensure_data(paths: Paths, labels_only: bool = False) -> Path:
+def ensure_data(paths: Paths, labels_only: bool = False, drive_cache: bool = True) -> Path:
+    """drive_cache=False (Colab): download the zip to the local disk only, when Google Drive has no room for it."""
     data = paths.data
     if paths.platform == "kaggle" or is_ready(data, labels_only):
         print(f"data ready at {data}")
@@ -95,16 +96,17 @@ def ensure_data(paths: Paths, labels_only: bool = False) -> Path:
         return data
 
     zip_name = f"{COMPETITION}.zip"
-    cached = DRIVE_ROOT / "data" / zip_name if paths.platform == "colab" else data / zip_name
+    on_drive = paths.platform == "colab" and drive_cache
+    cached = DRIVE_ROOT / "data" / zip_name if on_drive else paths.cache / zip_name
     if not cached.exists():
         cached.parent.mkdir(parents=True, exist_ok=True)
         _kaggle("-p", str(cached.parent))
     local_zip = cached
-    if paths.platform == "colab":                 # copy once to local disk, unzip from there
+    if on_drive:                                  # copy once to local disk, unzip from there
         local_zip = paths.cache / zip_name
         if not local_zip.exists():
             shutil.copy(cached, local_zip)
     _unzip(local_zip, data)
-    if paths.platform == "colab":
+    if on_drive or paths.platform == "colab":
         local_zip.unlink()
     return data

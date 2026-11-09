@@ -1,0 +1,24 @@
+base: _protocol
+family: pipeline
+description: YOLOv8s with an extra P2 head (stride 4), COCO weights; full frames + 2x2 tiles of wide frames, 1280 px
+model:
+  arch: yolov8s-p2.yaml     # Ultralytics model definition with detection outputs P2-P5 (strides 4-32)
+  weights: yolov8s.pt       # COCO weights, copied into every layer whose shape matches
+  imgsz: 1280               # long side of the network input
+  conf: 0.001               # keep low-score boxes: mAP needs the full ranking
+  iou: 0.5                  # NMS IoU, as the other detectors
+  max_det: 500              # the leaderboard scores up to 500 boxes per image
+export:                     # training images written in YOLO format
+  long_side: 1280           # images saved at the network size (faster loading)
+  tile_grid: [2, 2]         # frames at least tile_min_width wide also give 4 overlapping tiles
+  tile_overlap: 0.2
+  tile_min_width: 2000      # the 4K and 2.7K clips; objects there are the smallest after resizing
+  min_visible: 0.5          # a box cut by a tile border is kept if at least half of it is inside
+train:
+  hours: 1.75               # Ultralytics adapts the number of epochs to this time limit
+  epochs: 30                # upper bound / first guess before the time limit takes over
+  batch_size: 8
+  workers: 2
+  optimizer: auto           # Ultralytics' choice: AdamW with its own lr for short runs
+  close_mosaic: 3           # last 3 epochs without mosaic, on real-looking images
+  patience: 100             # no early stopping inside the time budget
