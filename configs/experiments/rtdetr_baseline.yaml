@@ -1,0 +1,18 @@
+base: _protocol
+family: query_based
+description: RT-DETR R50vd (Hugging Face), COCO weights, paper defaults
+model:
+  arch: PekingU/rtdetr_r50vd               # COCO-pretrained, like the CNN detectors
+  min_size: 800                            # same input size as the other detectors (pretrained at 640 x 640)
+  max_size: 1333
+  num_queries: 300                         # object queries = boxes per image; no NMS
+  num_denoising: 100                       # denoising queries (noisy copies of the true boxes)
+  matcher_class_cost: 2.0                  # Hungarian matching cost weights (paper defaults)
+  matcher_bbox_cost: 5.0                   # L1 on normalised box coordinates
+  matcher_giou_cost: 2.0
+  auxiliary_loss: true                     # loss on every decoder layer, not only the last
+  backbone_lr_mult: 0.1                    # backbone learns 10x slower than the transformer (paper)
+train:
+  optimizer: adamw                         # paper: AdamW, lr 1e-4, weight decay 1e-4, gradient clip 0.1
+  lr: 1.0e-4
+  clip_grad: 0.1

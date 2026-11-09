@@ -1,0 +1,4 @@
+base: rtdetr_baseline
+description: 500 denoising queries instead of 100 - several denoising groups even in dense frames
+model:
+  num_denoising: 500

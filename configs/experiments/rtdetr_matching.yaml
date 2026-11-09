@@ -1,0 +1,5 @@
+base: rtdetr_baseline
+description: matching cost weights - GIoU 4 and L1 2 instead of 2 and 5 (L1 on normalised boxes barely separates small objects)
+model:
+  matcher_bbox_cost: 2.0
+  matcher_giou_cost: 4.0

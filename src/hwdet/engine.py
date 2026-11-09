@@ -51,7 +51,10 @@ class Data:
 
 # ---------------------------------------------------------------- optimisation
 def _optimizer(model, t: dict):
-    params = [p for p in model.parameters() if p.requires_grad]
+    if hasattr(model, "param_groups"):            # models with their own per-part learning rates (RT-DETR)
+        params = model.param_groups(t["lr"])
+    else:
+        params = [p for p in model.parameters() if p.requires_grad]
     if t.get("optimizer", "sgd") == "adamw":
         return torch.optim.AdamW(params, lr=t["lr"], weight_decay=t.get("weight_decay", 1e-4))
     return torch.optim.SGD(params, lr=t["lr"], momentum=0.9, weight_decay=t.get("weight_decay", 1e-4))

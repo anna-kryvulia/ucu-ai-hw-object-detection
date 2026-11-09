@@ -1,0 +1,4 @@
+base: rtdetr_baseline
+description: 500 object queries instead of 300 - the densest frames have up to 180 objects
+model:
+  num_queries: 500

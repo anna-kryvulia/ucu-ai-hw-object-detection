@@ -10,3 +10,5 @@ pycocotools
 faster-coco-eval
 kaggle
 wandb
+transformers           # RT-DETR (Hugging Face)
+scipy                  # Hungarian matching inside RT-DETR
