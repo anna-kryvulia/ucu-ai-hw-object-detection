@@ -142,6 +142,5 @@ class YoloDetector:
         arrs = [np.ascontiguousarray((im.permute(1, 2, 0).cpu().numpy() * 255).round().astype(np.uint8)[..., ::-1])
                 for im in images]                                    # Ultralytics expects BGR uint8
         res = self.model.predict(arrs, imgsz=self.imgsz, conf=self.conf, iou=self.iou, max_det=self.max_det,
-                                 half=self.device == "cuda", device=0 if self.device == "cuda" else self.device,
-                                 verbose=False)
+                                 device=0 if self.device == "cuda" else self.device, verbose=False)   # fp32
         return [{"boxes": r.boxes.xyxy, "scores": r.boxes.conf, "labels": r.boxes.cls.long() + 1} for r in res]
