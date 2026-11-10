@@ -1,0 +1,35 @@
+seed: 42
+split:
+  train_frame_step: 10
+  monitor_frame_step: 5
+data:
+  mask_ignore: true
+train:
+  epochs: 8
+  batch_size: 4
+  optimizer: adamw
+  weight_decay: 0.0001
+  schedule: cosine
+  warmup_iters: 300
+  amp: true
+  hflip: 0.5
+  color_jitter: 0.0
+  workers: 4
+  eval_every: 1
+  lr: 0.0001
+  clip_grad: 0.1
+wandb: true
+family: query_based
+description: RT-DETR R50vd (Hugging Face), COCO weights, paper defaults
+model:
+  arch: PekingU/rtdetr_r50vd
+  min_size: 800
+  max_size: 1333
+  num_queries: 300
+  num_denoising: 100
+  matcher_class_cost: 2.0
+  matcher_bbox_cost: 5.0
+  matcher_giou_cost: 2.0
+  auxiliary_loss: true
+  backbone_lr_mult: 0.1
+name: rtdetr_baseline
