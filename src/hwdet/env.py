@@ -159,6 +159,8 @@ def configure_warnings(log_file: Path) -> None:
             print(f"warning: {key}", file=sys.stderr)
 
     warnings.showwarning = show
+    # compile-time warnings about other packages' source (e.g. Colab's notebookapp.py); our code compiles cleanly
+    warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 
 def warnings_summary(paths: Paths) -> list[str]:

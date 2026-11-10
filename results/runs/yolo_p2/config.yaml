@@ -1,0 +1,41 @@
+seed: 42
+split:
+  train_frame_step: 10
+  monitor_frame_step: 5
+data:
+  mask_ignore: true
+train:
+  epochs: 30
+  batch_size: 8
+  optimizer: auto
+  weight_decay: 0.0001
+  schedule: cosine
+  warmup_iters: 300
+  amp: true
+  hflip: 0.5
+  color_jitter: 0.0
+  workers: 2
+  eval_every: 1
+  hours: 1.75
+  close_mosaic: 3
+  patience: 100
+wandb: true
+family: pipeline
+description: YOLOv8s with an extra P2 head (stride 4), COCO weights; full frames +
+  2x2 tiles of wide frames, 1280 px
+model:
+  arch: yolov8s-p2.yaml
+  weights: yolov8s.pt
+  imgsz: 1280
+  conf: 0.001
+  iou: 0.5
+  max_det: 500
+export:
+  long_side: 1280
+  tile_grid:
+  - 2
+  - 2
+  tile_overlap: 0.2
+  tile_min_width: 2000
+  min_visible: 0.5
+name: yolo_p2
