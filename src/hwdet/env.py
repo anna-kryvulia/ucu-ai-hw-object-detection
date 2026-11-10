@@ -81,10 +81,16 @@ def restore_kaggle_outputs(paths: Paths) -> None:
     Copy any runs found there into /kaggle/working so training resumes instead of restarting."""
     if paths.platform != "kaggle":
         return
-    found = [p for pattern in ("*/outputs/runs", "*/*/*/outputs/runs")      # older and newer mount layouts
-             for p in Path("/kaggle/input").glob(pattern)]
+    roots = [d for d in Path("/kaggle/input").iterdir() if d.is_dir() and d.name != "competitions"]
+    for z in [z for r in roots for z in r.rglob("outputs*.zip")]:   # a dataset uploaded as a zip and left packed
+        out = Path("/tmp/hwdet_inputs") / z.parent.name
+        if not out.exists():
+            shutil.unpack_archive(z, out)
+        roots.append(out)
+    found = sorted({s.parent.parent for r in roots for s in r.rglob("runs/*/stages.json")    # any layout,
+                    if "repo" not in s.parts})          # not the repo copy (results/runs: small files only)
     for prev_runs in found:
-        for run_dir in prev_runs.iterdir():
+        for run_dir in sorted(d for d in prev_runs.iterdir() if d.is_dir()):
             dst = paths.runs / run_dir.name
             if not dst.exists():
                 shutil.copytree(run_dir, dst)
