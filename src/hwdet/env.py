@@ -88,7 +88,22 @@ def restore_kaggle_outputs(paths: Paths) -> None:
             dst = paths.runs / run_dir.name
             if not dst.exists():
                 shutil.copytree(run_dir, dst)
+                _register_restored(paths, dst)
                 print(f"restored run {run_dir.name} from {prev_runs}")
+
+
+def _register_restored(paths: Paths, run_dir: Path) -> None:
+    """Put the metrics of a restored run back into <outputs>/experiments.csv (the attached input brings
+    only the run folders, so without this the run table of the new session would miss them)."""
+    import json
+    import yaml
+    from .tracker import REGISTRY, _upsert_registry
+    metrics, cfg_file = run_dir / "metrics.json", run_dir / "config.yaml"
+    if not metrics.exists():
+        return
+    cfg = yaml.safe_load(cfg_file.read_text()) if cfg_file.exists() else {}
+    for eval_name, values in json.loads(metrics.read_text()).items():
+        _upsert_registry(paths.outputs / REGISTRY, run_dir.name, eval_name, cfg or {}, values)
 
 
 def seed_everything(seed: int = 42) -> None:
