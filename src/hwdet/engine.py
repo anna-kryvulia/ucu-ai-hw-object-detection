@@ -104,7 +104,9 @@ def inference_speed(model, ds: DetectionDataset, device: str, n: int = 50) -> di
 
 
 # ---------------------------------------------------------------- training
-def fit(model, run: Run, cfg: dict, data: Data, device: str) -> None:
+def fit(model, run: Run, cfg: dict, data: Data, device: str, stop_at: float | None = None) -> bool:
+    """Train until the last epoch (returns True). With `stop_at` (a time.time() value) training stops before
+    an epoch that would not finish in time (returns False); the next session resumes from last.pt."""
     t = cfg["train"]
     train_ds = DetectionDataset(data.train, data.root, data.targets, train=True,
                                 mask_ignore=cfg["data"].get("mask_ignore", True),
@@ -126,10 +128,20 @@ def fit(model, run: Run, cfg: dict, data: Data, device: str) -> None:
         start, best = ck["epoch"] + 1, ck["best"]
         print(f"resumed after epoch {ck['epoch']}")
 
+    eval_s = 0.0                                                   # duration of the last monitor evaluation
     for epoch in range(start, t["epochs"]):
+        if stop_at and time.time() > stop_at:
+            print(f"time budget reached before epoch {epoch}: save a new version to continue")
+            return False
         model.train()
         sums, n, t0 = {}, 0, time.time()
-        for imgs, targets, _ in tqdm(dl, desc=f"epoch {epoch}", leave=False, disable=NO_BARS):
+        for it, (imgs, targets, _) in enumerate(tqdm(dl, desc=f"epoch {epoch}", leave=False, disable=NO_BARS)):
+            if stop_at and it in (20, 200):                       # projected end of this epoch, from its own pace
+                end = t0 + (time.time() - t0) / it * len(dl) + max(eval_s, 120)
+                if end > stop_at:
+                    print(f"epoch {epoch} would end {(end - stop_at) / 60:.0f} min after the time budget: "
+                          f"stopped, save a new version to continue from epoch {epoch}")
+                    return False
             imgs = [im.to(device, non_blocking=True) for im in imgs]
             targets = [{k: v.to(device) for k, v in tg.items()} for tg in targets]
             with torch.autocast("cuda", enabled=use_amp):
@@ -154,9 +166,11 @@ def fit(model, run: Run, cfg: dict, data: Data, device: str) -> None:
         row = {k: v / max(n, 1) for k, v in sums.items()}
         row.update(lr=opt.param_groups[0]["lr"], train_min=(time.time() - t0) / 60)
         if (epoch + 1) % t.get("eval_every", 1) == 0 or epoch == t["epochs"] - 1:
+            te = time.time()
             preds = predict(model, monitor_ds, device, t["batch_size"], t.get("workers", 2), desc="monitor")
             m = evaluate(preds, data.monitor, data.root, per_class=False)
             row.update({f"val_{k}": m[k] for k in ("mAP", "AP50", "AP_small")})
+            eval_s = time.time() - te
             if m["mAP"] > best:
                 best = m["mAP"]
                 torch.save(model.state_dict(), run.ckpt("best.pt"))
@@ -164,6 +178,7 @@ def fit(model, run: Run, cfg: dict, data: Data, device: str) -> None:
         torch.save({"model": model.state_dict(), "opt": opt.state_dict(), "sched": sched.state_dict(),
                     "scaler": scaler.state_dict(), "epoch": epoch, "best": best}, run.ckpt("last.pt"))
         print(f"epoch {epoch}: " + ", ".join(f"{k}={v:.4g}" for k, v in row.items()))
+    return True
 
 
 def load_weights(model, run: Run, which: str = "best", device: str = "cpu"):
@@ -175,9 +190,12 @@ def load_weights(model, run: Run, which: str = "best", device: str = "cpu"):
 
 # ---------------------------------------------------------------- one experiment, end to end
 def run_experiment(config: str, build_model: Callable[[dict], torch.nn.Module], paths: Paths, data: Data,
-                   predict_test: bool = False, run_id: str | None = None, **overrides) -> Run:
+                   predict_test: bool = False, run_id: str | None = None, stop_at: float | None = None,
+                   eval_hours: float = 0.5, **overrides) -> Run:
     """train -> best checkpoint -> full-val predictions + metrics + speed [-> test predictions + submission].
-    Safe to call again after a crash: finished stages are skipped."""
+    Safe to call again after a crash: finished stages are skipped.
+    stop_at (time.time() value): no stage is started that would not finish before it (training stops at an
+    epoch boundary, evaluation needs `eval_hours`); the next session continues from there."""
     cfg = load_config(config, **overrides)
     run = Run(run_id or cfg["name"], cfg, paths)
     seed_everything(cfg.get("seed", 42))
@@ -186,8 +204,14 @@ def run_experiment(config: str, build_model: Callable[[dict], torch.nn.Module], 
     t = cfg["train"]
 
     if not run.is_done("train"):
-        fit(model, run, cfg, data, dev)
+        if not fit(model, run, cfg, data, dev, stop_at):
+            run.finish()
+            return run
         run.mark_done("train")
+    if stop_at and not run.is_done("test" if predict_test else "eval_val") and time.time() + eval_hours * 3600 > stop_at:
+        print(f"{run.id}: trained; evaluation postponed (needs ~{eval_hours} h): save a new version to continue")
+        run.finish()
+        return run
     model = load_weights(model, run, "best", dev)
 
     if not run.is_done("eval_val"):

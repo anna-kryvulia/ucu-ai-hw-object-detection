@@ -1,4 +1,4 @@
-"""RT-DETR (Hugging Face transformers) behind the torchvision detector interface.
+"""RT-DETR and RT-DETRv2 (Hugging Face transformers) behind the torchvision detector interface.
 
 Same code as the model cell of notebook 05, moved here so the own pipeline (notebook 07) can rebuild
 the trained model and load its checkpoint:
@@ -84,10 +84,11 @@ def new_head(d):
 
 
 def build_rtdetr(cfg):
-    """RT-DETR with COCO weights and new 8-class heads (the trained weights are loaded afterwards)."""
+    """RT-DETR (or RT-DETRv2 when the checkpoint name contains "v2") with COCO weights and new 8-class heads."""
     m = cfg["model"]
-    hf = RTDetrForObjectDetection.from_pretrained(m["arch"], anchor_image_size=None, eval_size=None,
-                                                  **{k: m[k] for k in HF_KWARGS})   # anchors from the real input size
+    cls = transformers.RTDetrV2ForObjectDetection if "v2" in m["arch"] else RTDetrForObjectDetection
+    hf = cls.from_pretrained(m["arch"], anchor_image_size=None, eval_size=None,
+                             **{k: m[k] for k in HF_KWARGS})   # anchors from the real input size
     d = hf.config.d_model
     hf.config.num_labels = NUM_CLASSES
     hf.config.id2label = dict(enumerate(CLASS_NAMES))

@@ -1,0 +1,4 @@
+base: rtdetr_data3           # switched to rtdetr_hires if the higher input size helps
+description: RT-DETRv2 R50vd (improved training recipe and decoder), every 3rd training frame
+model:
+  arch: PekingU/rtdetr_v2_r50vd

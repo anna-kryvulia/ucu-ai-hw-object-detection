@@ -1,0 +1,6 @@
+base: rtdetr_baseline
+description: RT-DETR R50vd, every 3rd training frame (3.4x more frames), 4 epochs
+split:
+  train_frame_step: 3        # notebook 05 peaked after 1-2 epochs on every 10th frame: more distinct frames
+train:
+  epochs: 4                  # 1.7x the training steps of notebook 05 (8 epochs on every 10th frame)
