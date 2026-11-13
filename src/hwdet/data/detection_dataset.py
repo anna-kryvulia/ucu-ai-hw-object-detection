@@ -63,7 +63,8 @@ class DetectionDataset(Dataset):
     train=False: the raw image is returned (validation / test / prediction)."""
 
     def __init__(self, frames: pd.DataFrame, data_root: Path, targets: dict | None = None, train: bool = False,
-                 mask_ignore: bool = True, hflip: float = 0.5, color_jitter: float = 0.0, min_box: float = 2.0):
+                 mask_ignore: bool = True, hflip: float = 0.5, color_jitter: float = 0.0, min_box: float = 2.0,
+                 lowres: float = 0.0, lowres_widths: tuple = (680, 960)):
         self.frames = frames.reset_index(drop=True)
         self.root = Path(data_root)
         self.targets = targets
@@ -72,6 +73,7 @@ class DetectionDataset(Dataset):
         self.hflip = hflip
         self.color_jitter = color_jitter
         self.min_box = min_box
+        self.lowres, self.lowres_widths = lowres, tuple(lowres_widths)
 
     def __len__(self) -> int:
         return len(self.frames)
@@ -100,6 +102,13 @@ class DetectionDataset(Dataset):
             img = ((img - img.mean()) * random.uniform(1 - j, 1 + j) + img.mean()
                    + random.uniform(-j / 3, j / 3)).clamp(0, 1)
 
+        if self.train and self.lowres > 0 and random.random() < self.lowres:   # a low-resolution frame, like
+            H, W = img.shape[-2:]                                               # 16% of the test set (680-960 px)
+            f = random.choice(self.lowres_widths) / W
+            if f < 1:
+                img = torch.nn.functional.interpolate(img[None], size=(round(H * f), round(W * f)), mode="bilinear",
+                                                      antialias=True, align_corners=False)[0].clamp(0, 1)
+                boxes = boxes * f
         wh = boxes[:, 2:] - boxes[:, :2]
         ok = (wh >= self.min_box).all(1)                       # drop degenerate boxes
         target = {"boxes": torch.as_tensor(boxes[ok], dtype=torch.float32).reshape(-1, 4),

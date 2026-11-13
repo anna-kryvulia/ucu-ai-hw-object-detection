@@ -5,3 +5,4 @@ model:
   max_size: 1920             # 4K frames: 2x downscale instead of 2.9x
 train:
   batch_size: 2              # ~2x the pixels per image of the 800 x 1333 input
+  epochs: 2                  # every RT-DETR run so far peaked after 1-2 epochs (notebooks 05, 08)

@@ -1,0 +1,5 @@
+base: rtdetr_hires
+description: RT-DETR R50vd at 1080 x 1920, every 3rd training frame, 30% of frames shrunk to 680 or 960 px wide
+train:
+  lowres: 0.3                # 16% of the test frames are 680-960 px wide; train and val have none below 1344
+  lowres_widths: [680, 960]  # the two low test resolutions (boxes are scaled with the image)

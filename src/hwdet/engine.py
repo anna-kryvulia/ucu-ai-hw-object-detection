@@ -110,7 +110,8 @@ def fit(model, run: Run, cfg: dict, data: Data, device: str, stop_at: float | No
     t = cfg["train"]
     train_ds = DetectionDataset(data.train, data.root, data.targets, train=True,
                                 mask_ignore=cfg["data"].get("mask_ignore", True),
-                                hflip=t.get("hflip", 0.5), color_jitter=t.get("color_jitter", 0.0))
+                                hflip=t.get("hflip", 0.5), color_jitter=t.get("color_jitter", 0.0),
+                                lowres=t.get("lowres", 0.0), lowres_widths=t.get("lowres_widths", (680, 960)))
     monitor_ds = DetectionDataset(data.monitor, data.root, data.targets)
     dl = DataLoader(train_ds, batch_size=t["batch_size"], shuffle=True, num_workers=t.get("workers", 2),
                     collate_fn=collate, drop_last=True, persistent_workers=t.get("workers", 2) > 0)
@@ -191,11 +192,12 @@ def load_weights(model, run: Run, which: str = "best", device: str = "cpu"):
 # ---------------------------------------------------------------- one experiment, end to end
 def run_experiment(config: str, build_model: Callable[[dict], torch.nn.Module], paths: Paths, data: Data,
                    predict_test: bool = False, run_id: str | None = None, stop_at: float | None = None,
-                   eval_hours: float = 0.5, **overrides) -> Run:
+                   eval_hours: float = 0.5, eval_val: bool = True, **overrides) -> Run:
     """train -> best checkpoint -> full-val predictions + metrics + speed [-> test predictions + submission].
     Safe to call again after a crash: finished stages are skipped.
     stop_at (time.time() value): no stage is started that would not finish before it (training stops at an
-    epoch boundary, evaluation needs `eval_hours`); the next session continues from there."""
+    epoch boundary, evaluation needs `eval_hours`); the next session continues from there.
+    eval_val=False skips the full-val evaluation (a model trained on val frames, test predictions only)."""
     cfg = load_config(config, **overrides)
     run = Run(run_id or cfg["name"], cfg, paths)
     seed_everything(cfg.get("seed", 42))
@@ -214,7 +216,7 @@ def run_experiment(config: str, build_model: Callable[[dict], torch.nn.Module], 
         return run
     model = load_weights(model, run, "best", dev)
 
-    if not run.is_done("eval_val"):
+    if eval_val and not run.is_done("eval_val"):
         val_ds = DetectionDataset(data.val, data.root, data.targets)
         preds = predict(model, val_ds, dev, t["batch_size"], t.get("workers", 2), desc="val")
         preds.to_csv(run.pred_path("val"), index=False)

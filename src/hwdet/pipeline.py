@@ -98,6 +98,75 @@ class TiledDetector:
         return {"boxes": b[k], "scores": s[k], "labels": lab[k]}
 
 
+class MultiScaleDetector:
+    """Test-time augmentation over input sizes (and optionally mirroring) for detectors with a torchvision
+    resize transform (RT-DETR, Faster R-CNN): the model runs once per scale, e.g. scales (1.0, 1.33) also
+    looks at every frame 1.33x larger, and all boxes are merged with class-wise NMS."""
+
+    def __init__(self, model, scales=(1.0,), flip: bool = False, nms_iou: float = 0.5, max_det: int = 500):
+        self.model, self.scales = model, tuple(scales)
+        self.flipped = TiledDetector(model, grid=(1, 1), flip=flip, nms_iou=nms_iou, max_det=max_det)
+        self.nms_iou, self.max_det = nms_iou, max_det
+
+    def eval(self):
+        self.model.eval()
+        return self
+
+    def to(self, device):
+        self.model = self.model.to(device)
+        self.flipped.model = self.model
+        return self
+
+    @torch.no_grad()
+    def __call__(self, images):
+        t = self.model.transform
+        base_min, base_max = t.min_size, t.max_size
+        outs = []
+        try:
+            for s in self.scales:
+                t.min_size, t.max_size = tuple(round(m * s) for m in base_min), round(base_max * s)
+                outs.append(self.flipped(images))
+        finally:
+            t.min_size, t.max_size = base_min, base_max
+        merged = []
+        for per_scale in zip(*outs):
+            b = torch.cat([o["boxes"] for o in per_scale])
+            s_ = torch.cat([o["scores"] for o in per_scale])
+            lab = torch.cat([o["labels"] for o in per_scale])
+            k = batched_nms(b, s_, lab, self.nms_iou)[: self.max_det]
+            merged.append({"boxes": b[k], "scores": s_[k], "labels": lab[k]})
+        return merged
+
+
+class DownscaledDetector:
+    """Low-resolution probe: every image is shrunk to `width` px wide before the detector and the boxes are
+    scaled back. 16% of the test frames are only 680-960 px wide, a size that train and val do not contain;
+    shrunk val frames show how a model copes with them."""
+
+    def __init__(self, model, width: int = 960):
+        self.model, self.width = model, width
+
+    def eval(self):
+        self.model.eval()
+        return self
+
+    def to(self, device):
+        self.model = self.model.to(device)
+        return self
+
+    @torch.no_grad()
+    def __call__(self, images):
+        small, factors = [], []
+        for img in images:
+            f = min(1.0, self.width / img.shape[-1])
+            factors.append(f)
+            small.append(img if f == 1 else torch.nn.functional.interpolate(
+                img[None], size=(round(img.shape[-2] * f), round(img.shape[-1] * f)), mode="bilinear",
+                antialias=True, align_corners=False)[0].clamp(0, 1))
+        outs = self.model(small)
+        return [{**o, "boxes": o["boxes"] / f} for o, f in zip(outs, factors)]
+
+
 # ---------------------------------------------------------------- ensembling
 def _xyxy(p: pd.DataFrame) -> torch.Tensor:
     b = torch.tensor(p[["x", "y", "w", "h"]].to_numpy(np.float32))

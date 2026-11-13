@@ -1,0 +1,4 @@
+base: rtdetr_hires           # notebook 08 adds the low-resolution augmentation if rtdetr_lowres beat rtdetr_hires
+description: RT-DETR R101vd (deeper backbone) at 1080 x 1920, every 3rd training frame
+model:
+  arch: PekingU/rtdetr_r101vd

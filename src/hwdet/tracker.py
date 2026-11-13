@@ -36,7 +36,8 @@ from .config import save_config
 from .env import Paths
 
 REGISTRY = "experiments.csv"
-SMALL_FILES = ("config.yaml", "stages.json", "history.csv", "metrics.json", "notes.md")
+SMALL_FILES = ("config.yaml", "stages.json", "history.csv", "metrics.json", "notes.md", "test_like.json",
+               "search.csv")
 
 
 def _now() -> str:

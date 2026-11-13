@@ -1,4 +1,4 @@
-base: rtdetr_data3           # switched to rtdetr_hires if the higher input size helps
-description: RT-DETRv2 R50vd (improved training recipe and decoder), every 3rd training frame
+base: rtdetr_hires           # notebook 08 adds the low-resolution augmentation if rtdetr_lowres beat rtdetr_hires
+description: RT-DETRv2 R50vd (improved decoder and training recipe) at 1080 x 1920, every 3rd training frame
 model:
   arch: PekingU/rtdetr_v2_r50vd
