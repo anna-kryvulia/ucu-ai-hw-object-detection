@@ -1,0 +1,5 @@
+family: pipeline
+model:
+  arch: ensemble
+description: NMS ensemble of rtdetr_baseline (full + flip) + yolo_p2 (full), IoU 0.6,
+  weight of the others 1.0

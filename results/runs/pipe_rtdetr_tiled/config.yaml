@@ -1,0 +1,11 @@
+family: pipeline
+model:
+  arch: rtdetr_baseline
+tiling:
+  setting: full + flip
+  grid:
+  - 1
+  - 1
+  flip: true
+description: 'rtdetr_baseline with tiled inference: full + flip, overlap 0.2, NMS
+  0.5'

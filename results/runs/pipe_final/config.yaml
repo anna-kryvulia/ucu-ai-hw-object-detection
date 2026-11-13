@@ -1,0 +1,5 @@
+family: pipeline
+model:
+  arch: ensemble + temporal
+description: rtdetr_baseline (full + flip) + yolo_p2 (full), NMS IoU 0.6, weight of
+  the others 1.0, temporal window 2, lambda 0.25
