@@ -5,7 +5,7 @@ split:
 data:
   mask_ignore: true
 train:
-  epochs: 4
+  epochs: 2
   batch_size: 2
   optimizer: adamw
   weight_decay: 0.0001
