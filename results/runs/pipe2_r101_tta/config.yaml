@@ -1,0 +1,9 @@
+family: pipeline
+model:
+  arch: rtdetr_r101
+tta:
+  setting: flip
+  scales:
+  - 1.0
+  flip: true
+description: 'rtdetr_r101 with TTA: flip, NMS 0.5'

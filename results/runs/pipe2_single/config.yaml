@@ -1,0 +1,4 @@
+family: pipeline
+model:
+  arch: TTA + temporal
+description: rtdetr_r101 (flip) + temporal window 1, lambda 0.15 (no ensemble)

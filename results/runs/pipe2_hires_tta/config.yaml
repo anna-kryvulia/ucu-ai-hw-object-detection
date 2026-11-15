@@ -1,0 +1,10 @@
+family: pipeline
+model:
+  arch: rtdetr_hires
+tta:
+  setting: flip + 1.33x
+  scales:
+  - 1.0
+  - 1.33
+  flip: true
+description: 'rtdetr_hires with TTA: flip + 1.33x, NMS 0.5'
