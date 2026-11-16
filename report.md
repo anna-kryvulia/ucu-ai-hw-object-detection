@@ -57,7 +57,7 @@ There are visible gap in resolution distribution in sets. Test set contains imag
 | AR_500        | Part of real objects found when up to 500 boxes per image are allowed                |
 | ms per image  | Time to process one frame on the GPU (speed)                                         |
 
-Because of the resolution gap found in the EDA, just the validation mAP does not describe the test set well enough. For the final experiments I used a "test-like" score: 0.84 × mAP on validation frames resized to at most 1920 px, plus 0.16 × the mean mAP on the same frames shrunk to 960 px and 680 px. The weights have the same share of such resolutions as in the test set.
+Because of the resolution gap found in the EDA, just the validation mAP does not describe the test set well enough. For the final experiments I used only the validation frames that are at most 1920 px wide, like all test frames ("test-like val", 1,286 frames). The "test-like" score is 0.84 × mAP on these frames plus 0.16 × the mean mAP on the same frames shrunk to 960 px and 680 px. The weights have the same share of such resolutions as in the test set.
 
 ### Shared training and evaluation protocol for all models
 | Setting                | Value                                              |
@@ -130,7 +130,7 @@ RT-DETR is a transformer detector. It has a fixed set of object querries, and ea
 ### YOLOv8s-P2
 notebook 06
 
-As a fast second model, for the pipeline I trained YOLOv8s with an extra P2 head for small objects. It was trained with Ultralytics for 30 epochs at 1280 px on full frames and on 2×2 tiles of wide frames.
+As a fast second model, for the pipeline I trained YOLOv8s with an extra P2 head for small objects. It was trained with Ultralytics for 1.75 h on a T4 GPU (Ultralytics picks the number of epochs for this time limit) at 1280 px on full frames and on 2×2 tiles of wide frames.
 
 ### Scaling RT-DETR
 notebook 08
@@ -222,18 +222,18 @@ More data, a higher resolution and a deeper backbone all improved validation. Th
 
 ### Inference pipeline
 
-In the first pipeline (notebook 07, plain validation mAP), flip TTA raised RT-DETR R50 from 0.263 to 0.272, while tiling gave no gain, and was much slower. The ensemble with YOLOv8s-P2 and temporal rescoring gave 0.273 on validation and 0.2993 on the public leaderboard.
+In the first pipeline (notebook 07, plain validation mAP), flip TTA on every 10th val frame raised RT-DETR R50 from 0.263 to 0.272, while tiling gave no gain, and was much slower. The ensemble with YOLOv8s-P2 and temporal rescoring gave 0.273 on validation and 0.2993 on the public leaderboard.
 
-The second pipeline (notebook 09) was tuned on the test-like score:
+The second pipeline (notebook 09) was tuned on the test-like val frames, so its table shows mAP on these frames:
 
-| Pipeline     | Parts                                         | test-like | AP_small | public LB |
+| Pipeline     | Parts                                         | test-like val mAP | AP_small | public LB |
 |--------------|-----------------------------------------------|-----------|----------|-----------|
 | r101 + TTA   | R101, flip                                    | 0.320     | 0.183    | –         |
 | hires + TTA  | hires, flip + 1.33×                           | 0.310     | 0.197    | –         |
 | pipe2_single | R101 flip + temporal                          | 0.321     | 0.184    | 0.3320    |
 | pipe2_final  | R101 flip + hires flip/1.33× + temporal       | 0.3265    | 0.200    | 0.3315    |
 
-The ensemble was the best pipeline on the test-like score, mostly because the high-resolution model adds small objects . On the public leaderboard both final pipelines are practically equal I chose these two as the final submissions.
+The ensemble was the best pipeline on test-like val, mostly because the high-resolution model adds small objects . On the public leaderboard both final pipelines are practically equal I chose these two as the final submissions.
 
 ![Final pipeline summary](images/pipeline2_summary.png)
 
