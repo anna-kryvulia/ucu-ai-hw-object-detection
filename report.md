@@ -7,7 +7,7 @@ date: 2026-11-16
 
 ## Introduction
 
-The task is to detect objects of 8 clases (person, bicycle, car, van, truck, tricycle, bus, motor) in frames of drone videos from the VisDrone2019-VID dataset. For every frame the model has to output boxes, a class and a confidence score for each box. The quality is measured with COCO mAP@[.5:.95] on a Kaggle leaderboard. The main difficulty of this data is that objects are very small and scenes are crowded, while neighbouring frames of a video look almost the same
+The task is to detect objects of 8 clases in frames of drone videos. For every frame the model has to output boxes, a class and a confidence score for each box. The quality is measured with COCO mAP@[.5:.95] on a Kaggle leaderboard. The main difficulty of this data is that objects are very small and scenes are crowded, while neighbouring frames of a video look almost the same
 
 The work was done in steps. First I explored the data then I trained four detector families with one shared protocol and tried several modifications for each of them. After that I scaled up the strongest model and built an inference pipeline on top of it, with test-time augmentation, an ensemble and a temporal rescoring step. All the code is in the `notebooks/` folder, and all metrics are saved in `results/`.
 
@@ -57,7 +57,7 @@ There are visible gap in resolution distribution in sets. Test set contains imag
 | AR_500        | Part of real objects found when up to 500 boxes per image are allowed                |
 | ms per image  | Time to process one frame on the GPU (speed)                                         |
 
-Because of the resolution gap found in the EDA, just the validation mAP does not describe the test set well enough. For the final experiments I used a "test-like" score: 0.84 × mAP on validation frames resized to at most 1920 px, plus 0.16 × the mean mAP on the same frames shrunk to 960 px and 680 px. The weights have the same the share of such resolutions in the test set.
+Because of the resolution gap found in the EDA, just the validation mAP does not describe the test set well enough. For the final experiments I used a "test-like" score: 0.84 × mAP on validation frames resized to at most 1920 px, plus 0.16 × the mean mAP on the same frames shrunk to 960 px and 680 px. The weights have the same share of such resolutions as in the test set.
 
 ### Shared training and evaluation protocol for all models
 | Setting                | Value                                              |
@@ -147,7 +147,8 @@ RT-DETR was clearly the strongest family, so i spent the remaining compute on it
 ### Inference pipeline
 notebooks 07 and 09
 
-On top of the trained models I added three inference steps, each tuned on validation. Test-time augmentation (TTA) runs the model also on the flipped and on the 1.33× enlarged frame and merges all boxes with NMS I also tried tiling where a wide frame is cut into tiles that are processed seperately. The ensemble merges boxes of two different models with NMS. Temporal rescoring uses the fact, that neighbouring frames are almost the same: if a box has a matching box in the previous or next frame, its score is increased so random false positives lose their place in the ranking. The first version of the pipeline (notebook 07) combined RT-DETR R50 with YOLOv8s-P2. The final version (notebook 09) combined RT-DETR R101 with the high-resolution RT-DETR.
+On top of the trained models I added three inference steps, each tuned on validation. Test-time augmentation (TTA) runs the model also on the flipped and on the 1.33× enlarged frame and merges all boxes with NMS. I also tried tiling where a wide frame is cut into tiles that are processed seperately. The ensemble merges boxes of two different models with NMS. Temporal rescoring uses the fact, that neighbouring frames are almost the same: if a box has a matching box in the previous or next frame, its score is increased, so random false positives lose their place in the ranking. The first version of the pipeline (notebook 07) combined RT-DETR R50 with YOLOv8s-P2. The final version (notebook 09) combined RT-DETR R101 with the high-resolution RT-DETR.
+
 
 ## Results
 
@@ -232,9 +233,33 @@ The second pipeline (notebook 09) was tuned on the test-like score:
 | pipe2_single | R101 flip + temporal                          | 0.321     | 0.184    | 0.3320    |
 | pipe2_final  | R101 flip + hires flip/1.33× + temporal       | 0.3265    | 0.200    | 0.3315    |
 
-The ensemble was the best pipeline on the test-like score, mostly because the high-resolution model adds small objects . On the public leaderboard both final pipelines are practically equal I chose these two as the final submissions, since the grade is computed on the private 70% of the test set.
+The ensemble was the best pipeline on the test-like score, mostly because the high-resolution model adds small objects . On the public leaderboard both final pipelines are practically equal I chose these two as the final submissions.
 
 ![Final pipeline summary](images/pipeline2_summary.png)
+
+## Final model and run instructions
+
+The selected model is the ensemble `pipe2_final`: `rtdetr_r101` with flip TTA and `rtdetr_hires` with flip + 1.33× TTA, merged with NMS (IoU 0.6, equal weights), then temporal rescoring (window 1, λ 0.15). Test-like val 0.3265, public 0.3315. The second submission `pipe2_single` is the same without the ensemble (public 0.3320).
+
+| Setting            | rtdetr_r101                    | rtdetr_hires                   |
+|--------------------|--------------------------------|--------------------------------|
+| Weights            | PekingU/rtdetr_r101vd (COCO)   | PekingU/rtdetr_r50vd (COCO)    |
+| Config             | `configs/experiments/rtdetr_r101.yaml` | `configs/experiments/rtdetr_hires.yaml` |
+| Training frames    | every 3rd frame                | every 3rd frame                |
+| Input size         | 1080 × 1920                    | 1080 × 1920                    |
+| Epochs, batch size | 2, 2                           | 2, 2                           |
+| Optimiser          | AdamW, LR 1e-4, backbone ×0.1, gradient clipping 0.1 | same                 |
+| Seed               | 42                             | 42                             |
+
+Dependencies are Python ≥ 3.10, torch 2.11 with CUDA and `requirements.txt`. The first cell of each notebook installs them, clones the repo and loads the data. On Kaggle, attach the competition data and turn on Internet and GPU.
+
+| Step | Notebook | Where | Inputs | Output |
+|------|----------|-------|--------|--------|
+| 1 | `06_pipeline_yolo.ipynb` | Colab T4 | competition data | `yolo-p2-run` dataset |
+| 2 | `08_rtdetr_scaled.ipynb` | Kaggle GPU | competition data | `rtdetr_hires`, `rtdetr_r101` |
+| 3 | `09_pipeline_final_v2.ipynb` | Kaggle GPU | outputs of steps 1 and 2 | `pipe2_final`, `pipe2_single` submission.csv |
+
+If notebook 08 doesn't finish in one session, attach its output to the next one and finished runs are skipped.
 
 ## Conclusion
 
